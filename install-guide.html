@@ -162,14 +162,6 @@
   .fork-card p{font-size:13px;color:var(--ink-soft);margin-bottom:12px}
   .fork-card .badge{display:inline-block;background:var(--clay-soft);color:var(--clay-dark);font-size:11px;font-weight:800;padding:3px 10px;border-radius:999px;margin-bottom:10px}
 
-  /* 더보기 (details/summary) */
-  details.more{background:#fff;border:1px solid var(--line);border-radius:14px;margin:14px 0;overflow:hidden}
-  details.more summary{cursor:pointer;padding:15px 18px;font-weight:800;font-size:14.5px;list-style:none;display:flex;align-items:center;justify-content:space-between}
-  details.more summary::-webkit-details-marker{display:none}
-  details.more summary::after{content:"더보기 ▾";color:var(--clay-dark);font-size:12.5px;font-weight:700}
-  details.more[open] summary::after{content:"접기 ▴"}
-  details.more .more-body{padding:0 18px 20px;border-top:1px solid var(--line)}
-
   @media(max-width:920px){
     .wrap{grid-template-columns:1fr}
     .sidebar{display:none}
@@ -424,25 +416,23 @@
             <span class="badge" style="background:var(--blue-soft);color:var(--blue)">설치 없음</span>
             <h4>그냥 브라우저로 접속</h4>
             <p>설치 과정 없이 지금 바로 쓸 수 있어요. 모든 기능이 앱과 완전히 똑같이 동작해요.</p>
-            <a class="link" href="#web-only">＋ 아래에서 자세히 보기</a>
+            <a class="link" href="#web-only">＋ 바로 아래에서 보기</a>
           </div>
         </div>
 
-        <details class="more" id="web-only">
-          <summary>🌐 앱 설치 없이 웹으로 쓰는 법 (자세히)</summary>
-          <div class="more-body">
-            <p class="body" style="margin-top:16px">이 방법이 제일 간단해요. 전자칠판이나 태블릿, 교실 TV의 브라우저만 있으면 돼요.</p>
-            <div class="steps">
-              <div class="step"><h4>교실 화면 기기에서 브라우저 열기</h4><p>전자칠판·태블릿·교실 PC의 Chrome(또는 기본 브라우저)을 엽니다.</p></div>
-              <div class="step"><h4>학생용 주소 접속</h4><p><strong>05</strong>에서 확인한 <strong>학생용 주소</strong>(파라미터 없는 기본 URL)를 입력합니다.</p></div>
-              <div class="step"><h4>우리 반 선택</h4><p>시작 화면에서 학년·반을 선택하고 <code>📣 시작하기</code>를 눌러요. 이 클릭이 소리·음성을 활성화시켜요.</p></div>
-              <div class="step"><h4>화면 그대로 두기</h4><p>이 상태로 화면을 켜두면, 평소엔 시간표·급식이 보이는 대기화면, 호출이 오면 알림 화면으로 자동 전환돼요.</p></div>
-            </div>
-            <div class="note tip"><span class="ic">💡</span><div><b>매번 다시 여는 게 번거롭다면</b><p>이 주소를 브라우저 즐겨찾기(북마크)로 저장하거나, 안드로이드 Chrome이라면 우측 상단 메뉴 ▸ <strong>"홈 화면에 추가"</strong>를 하면 앱처럼 아이콘 하나로 바로 열 수 있어요.</p></div></div>
-            <div class="note warn"><span class="ic">⚠️</span><div><b>브라우저 탭을 닫으면 호출을 못 받아요</b><p>이 방식은 화면을 계속 켜두고 탭을 유지해야 호출을 받을 수 있어요. 전자칠판을 다른 용도로도 자주 쓰신다면 왼쪽의 <a class="link" href="#s7">앱 설치</a>가 더 편해요.</p></div></div>
-            <p class="body">이후 사용법(평소 화면 보는 법, 호출을 받으면 어떻게 되는지, 소리 설정)은 아래 <a class="link" href="#s9">09. 사용법</a>과 완전히 동일해요.</p>
+        <div id="web-only">
+          <h3><span class="e">🌐</span>앱 설치 없이 웹으로 쓰는 법</h3>
+          <p class="body">이 방법이 제일 간단해요. 전자칠판이나 태블릿, 교실 TV의 브라우저만 있으면 돼요.</p>
+          <div class="steps">
+            <div class="step"><h4>교실 화면 기기에서 브라우저 열기</h4><p>전자칠판·태블릿·교실 PC의 Chrome(또는 기본 브라우저)을 엽니다.</p></div>
+            <div class="step"><h4>학생용 주소 접속</h4><p><strong>05</strong>에서 확인한 <strong>학생용 주소</strong>(파라미터 없는 기본 URL)를 입력합니다.</p></div>
+            <div class="step"><h4>우리 반 선택</h4><p>시작 화면에서 학년·반을 선택하고 <code>📣 시작하기</code>를 눌러요. 이 클릭이 소리·음성을 활성화시켜요.</p></div>
+            <div class="step"><h4>화면 그대로 두기</h4><p>이 상태로 화면을 켜두면, 평소엔 시간표·급식이 보이는 대기화면, 호출이 오면 알림 화면으로 자동 전환돼요.</p></div>
           </div>
-        </details>
+          <div class="note tip"><span class="ic">💡</span><div><b>매번 다시 여는 게 번거롭다면</b><p>이 주소를 브라우저 즐겨찾기(북마크)로 저장하거나, 안드로이드 Chrome이라면 우측 상단 메뉴 ▸ <strong>"홈 화면에 추가"</strong>를 하면 앱처럼 아이콘 하나로 바로 열 수 있어요.</p></div></div>
+          <div class="note warn"><span class="ic">⚠️</span><div><b>브라우저 탭을 닫으면 호출을 못 받아요</b><p>이 방식은 화면을 계속 켜두고 탭을 유지해야 호출을 받을 수 있어요. 전자칠판을 다른 용도로도 자주 쓰신다면 위의 <a class="link" href="#s7">앱 설치</a>가 더 편해요.</p></div></div>
+          <p class="body">이후 사용법(평소 화면 보는 법, 호출을 받으면 어떻게 되는지, 소리 설정)은 <a class="link" href="#s9">09. 사용법</a>과 완전히 동일해요.</p>
+        </div>
       </section>
 
       <!-- ===== 07. 앱 설치하기 (APK) ===== -->
