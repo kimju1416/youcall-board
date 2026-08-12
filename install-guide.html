@@ -331,7 +331,12 @@
         <div class="note lock"><span class="ic">🔐</span><div><b>학교명은 꼭 정확하게</b><p>"학교명" 칸에 <strong>정식 명칭</strong>으로 입력하세요 (예: "OO중학교"). 다음 단계(<strong>05</strong>)의 학교코드 조회가 이 이름으로 검색돼요.</p></div></div>
         <p class="body">그 외 테마(1~5)·자동닫힘시간·시정(1교시 시작시각 등)·긴급공지·학급메모는 나중에 언제든 바꿀 수 있어요. 지금은 기본값 그대로 두고 넘어가도 괜찮아요.</p>
 
-        <div class="note tip"><span class="ic">💡</span><div><b>NEIS API 키는 발급받지 않아도 돼요</b><p>급식·시간표 자동연동에 필요한 인증키가 이 사본에 이미 내장돼 있어요. 학교명만 정확히 입력하면 다음 단계에서 바로 연동돼요.</p></div></div>
+        <div class="note tip"><span class="ic">💡</span><div><b>공지·메모를 특정 반에만 보여줄 수도 있어요</b><p>설정 시트의 <strong>"긴급 공지 대상학급"·"학급 메모 대상학급"</strong> 칸에 <code>전체</code> 대신 <code>1-2</code>(1학년 2반), <code>1-1,2-3</code>(여러 반), <code>2</code>(2학년 전체)처럼 적으면 그 학급 화면에만 표시돼요. 기본값은 <code>전체</code>예요.</p></div></div>
+
+        <h3><span class="e">🗓️</span>학사일정 시트</h3>
+        <p class="body"><strong>비워둬도 돼요.</strong> 학교 행사(방학식·시험·공휴일 등)는 <strong>NEIS 학사일정에서 자동으로</strong> 불러와 D-day로 표시돼요. 수학여행처럼 따로 알리고 싶은 일정이 있을 때만 이 시트에 <code>날짜 | 제목</code>으로 직접 추가하면 자동 일정과 함께 표시되고, 행을 지우면 바로 사라져요.</p>
+
+        <div class="note tip"><span class="ic">💡</span><div><b>NEIS API 키는 발급받지 않아도 돼요</b><p>급식·시간표·학사일정 자동연동에 필요한 인증키가 이 사본에 이미 내장돼 있어요. 학교명만 정확히 입력하면 다음 단계에서 바로 연동돼요.</p></div></div>
       </section>
 
       <!-- ===== 04. 배포하기 ===== -->
@@ -384,6 +389,8 @@
         </table>
 
         <div class="note warn"><span class="ic">⚠️</span><div><b>?role=teacher 없이 접속하면</b><p>교사 PC에서도 학생용 화면이 열려요. 교무실 PC 북마크에는 꼭 <code>?role=teacher</code>가 포함된 주소를 저장하세요.</p></div></div>
+
+        <div class="note lock"><span class="ic">🔐</span><div><b>교사용 주소는 교직원끼리만 공유하세요</b><p>교사용 화면에는 <strong>전교생 명단(학년·반·번호·이름)</strong>이 들어 있어요. 주소만 알면 누구나 열 수 있으니 학생·학부모나 외부에 <strong>절대 공유하지 마시고</strong>, 메신저 단체방·게시판 등 공개된 곳에도 올리지 마세요. 학생용(기본) 주소에는 명단이 실리지 않아요.</p></div></div>
 
         <div class="note tip"><span class="ic">💡</span><div><b>주소를 다시 확인하고 싶다면</b><p>Apps Script ▸ <code>배포</code> ▸ <code>배포 관리</code>에서 활성 배포의 URL을 언제든 다시 볼 수 있어요.</p></div></div>
 
@@ -462,9 +469,9 @@
 
         <div class="note info"><span class="ic">ℹ️</span><div><b>우리 교실이 맞는지 확인</b><p>전자칠판에 윈도우 PC가 연결돼 있고, 전원을 켰을 때 바탕화면(시작 버튼 ⊞)이 뜨면 이 방법이 맞아요. 전자칠판 자체가 안드로이드라면 <a class="link" href="#s9">09</a>의 APK를 쓰세요.</p></div></div>
 
-        <a class="dl-btn" href="https://github.com/kimju1416/youcall-desktop/releases/latest/download/YouCallDesk-Setup-1.0.0.exe">
-          ⬇️ YouCallDesk-Setup-1.0.0.exe 내려받기
-          <span class="sub">v1.0.0 · 약 78MB · 항상 최신 버전으로 연결돼요</span>
+        <a class="dl-btn" href="https://github.com/kimju1416/youcall-desktop/releases/latest/download/YouCallDesk-Setup.exe">
+          ⬇️ YouCallDesk-Setup.exe 내려받기
+          <span class="sub">약 78MB · 항상 최신 버전으로 연결돼요</span>
         </a>
 
         <div class="code">
@@ -495,7 +502,7 @@
 
         <a class="dl-btn" href="https://github.com/kimju1416/youcall-board/releases/latest/download/YouCallBoard.apk">
           ⬇️ YouCallBoard.apk 내려받기
-          <span class="sub">v1.0.0 · 약 3.6MB · 항상 최신 버전으로 연결돼요</span>
+          <span class="sub">약 3.6MB · 항상 최신 버전으로 연결돼요</span>
         </a>
 
         <div class="code">
@@ -570,9 +577,9 @@
           <div class="tipcard"><span class="te">🕐</span><h4>시계 · 교시 상태</h4><p>현재 시각과 지금이 몇 교시·쉬는시간인지 상태칩으로 표시돼요.</p></div>
           <div class="tipcard"><span class="te">📅</span><h4>오늘 · 이번주 시간표</h4><p>NEIS와 연동돼 자동으로 표시돼요. 따로 입력할 필요 없어요.</p></div>
           <div class="tipcard"><span class="te">🍚</span><h4>오늘 급식</h4><p>칼로리·알레르기 정보까지 함께 표시돼요.</p></div>
-          <div class="tipcard"><span class="te">🗓️</span><h4>학사일정 D-day</h4><p>다가오는 학교 행사를 D-day로 보여줘요.</p></div>
-          <div class="tipcard"><span class="te">📌</span><h4>학급 메모</h4><p>담임 선생님이 적어둔 안내가 여기 표시돼요.</p></div>
-          <div class="tipcard"><span class="te">📢</span><h4>긴급 공지</h4><p>공지가 등록되면 화면 위쪽에 눈에 띄게 떠요.</p></div>
+          <div class="tipcard"><span class="te">🗓️</span><h4>학사일정 D-day</h4><p>NEIS 학사일정에서 자동으로 불러와요. 학사일정 시트에 직접 추가한 일정도 함께 표시돼요.</p></div>
+          <div class="tipcard"><span class="te">📌</span><h4>학급 메모</h4><p>설정 시트 "학급 메모"에 적은 안내가 표시돼요. 대상학급을 정하면 그 반에만 보여요.</p></div>
+          <div class="tipcard"><span class="te">📢</span><h4>긴급 공지</h4><p>설정 시트 "긴급 공지"에 적으면 화면 위쪽에 눈에 띄게 떠요. 특정 반에만 보내는 것도 가능해요.</p></div>
         </div>
 
         <h3><span class="e">📣</span>호출을 받으면</h3>
@@ -603,7 +610,8 @@
           <li><strong>호출이 2~3초 뒤에 떠요</strong> — 정상이에요. 구글 서버를 거쳐 오는 구조라 2~3초 정도 걸려요. 웹·EXE·APK 모두 동일해요.</li>
           <li><strong>교사 화면이 안 열려요</strong> — 주소 끝에 <code>?role=teacher</code>가 정확히 붙어 있는지 확인하세요. 파라미터 없이 접속하면 학생용 화면이 열려요.</li>
           <li><strong>소리가 안 나요</strong> — 웹은 시작 화면에서 <code>시작하기</code>를 눌렀는지(브라우저 정책상 첫 클릭이 필요해요), EXE·APK는 🔊 버튼에서 볼륨과 호출음을 확인하고 소리 테스트를 눌러보세요.</li>
-          <li><strong>급식·시간표가 안 나와요</strong> — 설정 시트의 학교명이 정확한지, <code>유콜 ▸ 학교코드 조회</code>를 실행했는지 확인하세요. 방학·주말에는 원래 표시되지 않아요.</li>
+          <li><strong>급식·시간표·학사일정이 안 나와요</strong> — 설정 시트의 학교명이 정확한지, <code>유콜 ▸ 학교코드 조회</code>를 실행했는지 확인하세요. 급식·시간표는 방학·주말에는 원래 표시되지 않아요.</li>
+          <li><strong>공지·메모를 바꿨는데 화면에 안 떠요</strong> — 대상학급을 지정했다면 그 반이 맞는지 먼저 확인하세요. 웹으로 쓰는 교실은 새로고침해야 반영되고, EXE·APK는 3분 안에 자동으로 반영돼요.</li>
           <li><strong>상주형 APK인데 호출 화면이 안 떠요</strong> — 「다른 앱 위에 표시」 권한이 꺼져 있을 수 있어요. 설정 ▸ 애플리케이션 ▸ 유콜 보드 ▸ 권한에서 켜주세요.</li>
           <li><strong>EXE 설치할 때 파란 경고 화면이 떠요</strong> — 윈도우 SmartScreen이에요. <code>추가 정보</code> ▸ <code>실행</code>을 누르면 진행됩니다. 스토어를 거치지 않은 프로그램이면 다 뜨는 정상적인 경고예요.</li>
           <li><strong>EXE를 완전히 끄고 싶어요</strong> — 트레이 아이콘(작업표시줄 오른쪽 하단)을 우클릭 ▸ <code>종료</code>를 누르세요. X 버튼만 누르면 트레이로 숨을 뿐 계속 실행 중이에요.</li>
