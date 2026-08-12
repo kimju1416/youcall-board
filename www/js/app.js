@@ -451,7 +451,14 @@ function wireCfgModal() {
     if (!url || !grade || !classNum) { statusEl.textContent = 'URL·학년·반을 모두 입력하세요.'; statusEl.className = 'cfg-status err'; return; }
 
     statusEl.textContent = '연결 확인 중...'; statusEl.className = 'cfg-status';
-    var test = await api.getBoard(url, grade, classNum);
+    // GAS가 한동안 안 쓰이다 깨어나는 순간엔 응답이 8초를 넘겨 정상 URL도 "연결 실패"로 뜨던 문제 —
+    // 확인 단계만 30초 제한 + 최대 3회 재시도. 첫 시도가 서버를 깨워놔서 재시도는 대부분 바로 붙는다.
+    var test = null;
+    for (var attempt = 1; attempt <= 3; attempt++) {
+      if (attempt > 1) { statusEl.textContent = '연결 확인 중... (재시도 ' + attempt + '/3)'; }
+      test = await callApi(url, 'board', { grade: grade, classNum: classNum }, 30000);
+      if (test.ok) break;
+    }
     if (!test.ok) {
       statusEl.textContent = '연결 실패: ' + test.error + ' (URL을 다시 확인하세요)';
       statusEl.className = 'cfg-status err';
