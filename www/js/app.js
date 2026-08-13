@@ -60,30 +60,48 @@ var api = {
   getTts: function (u, text) { return callApi(u, 'tts', { text: text }); }
 };
 
-/* ===== 호출 폴링 + 상태 머신 (main.js의 tick/refreshBoard 이식) ===== */
-var POLL_MS = 2000, BOARD_REFRESH_MS = 3 * 60 * 1000;
-var pollTimer = null, boardTimer = null;
+/* ===== 호출 폴링 + 상태 머신 (main.js의 tick/refreshBoard/refreshMeal 이식) ===== */
+// POLL_MS: 호출 감지 주기 — 서버 동시접속 부하를 줄이려 3초. (EXE main.js와 동일 상수)
+// BOARD_REFRESH_MS: 공지/설정만 자주(3분). MEAL_REFRESH_MS: 급식/시간표는 드물게(30분).
+// MEAL_RETRY_MS: 급식/시간표 실패 시 30분 안 기다리고 90초 뒤 1회 재시도.
+var POLL_MS = 3000, BOARD_REFRESH_MS = 3 * 60 * 1000, MEAL_REFRESH_MS = 30 * 60 * 1000, MEAL_RETRY_MS = 90 * 1000;
+var pollTimer = null, boardTimer = null, mealTimer = null, mealRetryTimer = null;
 var alertedRows = {}, current = null, autoDismissSec = 30;
+
+// 급식/시간표 직전 성공값(last-good) — NEIS 일시 실패 시 빈값으로 덮지 않고 이 값을 유지한다.
+var lastMeal = [], lastToday = [], lastWeek = {};
 
 function isConfigured() { return !!(SETTINGS.webAppUrl && SETTINGS.grade && SETTINGS.classNum); }
 
+// (A) 공지/설정 — getBoard만. 자주(BOARD_REFRESH_MS) 돈다. 렌더러엔 board만 실어 보낸다(부분 업데이트).
 async function refreshBoard() {
   if (!isConfigured()) return;
   var s = SETTINGS;
+  var board = await api.getBoard(s.webAppUrl, s.grade, s.classNum);
+  if (board.ok && board.data && typeof board.data.autoDismiss === 'number') autoDismissSec = board.data.autoDismiss;
+  if (board.ok) onBoardData({ board: board.data });
+}
+
+// (B) 급식/시간표 — getMeal + getTimetable(today/week). 드물게(MEAL_REFRESH_MS) 돈다.
+// 성공한 항목만 last-good으로 갱신, 실패한 항목은 직전값 유지. 하나라도 실패면 MEAL_RETRY_MS 뒤 1회 재시도(중복 예약 방지).
+async function refreshMeal() {
+  if (!isConfigured()) return;
+  if (mealRetryTimer) { clearTimeout(mealRetryTimer); mealRetryTimer = null; }
+  var s = SETTINGS;
   var results = await Promise.all([
-    api.getBoard(s.webAppUrl, s.grade, s.classNum),
     api.getMeal(s.webAppUrl),
     api.getTimetable(s.webAppUrl, s.grade, s.classNum, 'today'),
     api.getTimetable(s.webAppUrl, s.grade, s.classNum, 'week')
   ]);
-  var board = results[0], meal = results[1], today = results[2], week = results[3];
-  if (board.ok && board.data && typeof board.data.autoDismiss === 'number') autoDismissSec = board.data.autoDismiss;
-  onBoardData({
-    board: board.ok ? board.data : null,
-    meal: meal.ok ? meal.data : [],
-    todayTimetable: today.ok ? today.data : [],
-    weekTimetable: week.ok ? week.data : {}
-  });
+  var meal = results[0], today = results[1], week = results[2];
+  if (meal.ok) lastMeal = meal.data;   // 실패면 직전값 유지(빈값으로 덮지 않음)
+  if (today.ok) lastToday = today.data;
+  if (week.ok) lastWeek = week.data;
+  onBoardData({ meal: lastMeal, todayTimetable: lastToday, weekTimetable: lastWeek });
+  if (!meal.ok || !today.ok || !week.ok) {
+    if (mealRetryTimer) clearTimeout(mealRetryTimer);
+    mealRetryTimer = setTimeout(refreshMeal, MEAL_RETRY_MS);
+  }
 }
 
 async function tick() {
@@ -116,10 +134,14 @@ async function tick() {
 function startPolling() {
   if (pollTimer) clearInterval(pollTimer);
   if (boardTimer) clearInterval(boardTimer);
-  refreshBoard().then(function () {
+  if (mealTimer) clearInterval(mealTimer);
+  if (mealRetryTimer) { clearTimeout(mealRetryTimer); mealRetryTimer = null; }
+  refreshMeal(); // 급식/시간표도 시작 즉시 1회 로드 — 설치 직후 30분 기다리지 않게
+  refreshBoard().then(function () { // autoDismissSec을 먼저 채워야 첫 알림부터 정확한 카운트다운
     tick();
     pollTimer = setInterval(tick, POLL_MS);
     boardTimer = setInterval(refreshBoard, BOARD_REFRESH_MS);
+    mealTimer = setInterval(refreshMeal, MEAL_REFRESH_MS);
   });
 }
 
@@ -349,6 +371,9 @@ function startClock() {
 }
 
 /* ===== board 데이터 반영 ===== */
+// 공지 경로는 {board}만, 급식/시간표 경로는 {meal,todayTimetable,weekTimetable}만 나눠 온다.
+// 받은 필드만 다시 그리고, 안 온(undefined) 필드는 기존 화면을 그대로 둔다.
+// (빈 배열/빈 객체로 온 경우의 "없음" 표시는 각 render 함수가 유지 — undefined와는 구분된다.)
 function onBoardData(data) {
   if (data.board) {
     document.documentElement.setAttribute('data-theme', String(data.board.theme || 1));
@@ -358,9 +383,9 @@ function onBoardData(data) {
     renderAgenda(data.board.agenda);
     if (data.board.periodConfig) { PERIOD_CONFIG = data.board.periodConfig; SCHEDULE = buildSchedule(PERIOD_CONFIG); }
   }
-  renderMeal(data.meal);
-  renderPeriodRow(data.todayTimetable);
-  renderWeek(data.weekTimetable);
+  if (data.meal !== undefined) renderMeal(data.meal);
+  if (data.todayTimetable !== undefined) renderPeriodRow(data.todayTimetable);
+  if (data.weekTimetable !== undefined) renderWeek(data.weekTimetable);
 }
 
 /* ===== 호출 알림 표시 ===== */
