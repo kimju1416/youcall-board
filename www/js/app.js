@@ -296,9 +296,11 @@ function renderMeal(meals) {
   var el = document.getElementById('mealList'); if (!el) return;
   if (!meals || !meals.length) { el.innerHTML = '<div class="meal-empty">오늘은 급식이 없어요</div>'; return; }
   el.innerHTML = '';
+  el.className = (meals.length > 1) ? 'multi' : '';
   var typeIcon = { '조식': '🌅', '중식': '🍚', '석식': '🌙' };
   meals.forEach(function (m) {
     var wrap = document.createElement('div'); wrap.className = 'meal-slot';
+    if (String(m.type).indexOf('석') === 0) wrap.className += ' dinner';
     var mh = document.createElement('div'); mh.className = 'mh';
     var mt = document.createElement('div'); mt.className = 'mt'; mt.textContent = (typeIcon[m.type] || '🍽️') + ' ' + m.type;
     mh.appendChild(mt);
@@ -311,7 +313,33 @@ function renderMeal(meals) {
     }
     el.appendChild(wrap);
   });
+  fitMealBox();
+  // 웹폰트가 늦게 적용되면 첫 측정이 실제보다 작게 나와 배율이 덜 낮아진다 — 폰트 준비 후 다시 맞춘다
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(function () { fitMealBox(); });
 }
+/* 급식이 박스를 넘치면 글자 배율(--ms)을 단계적으로 낮춰 스크롤 없이 다 보이게 맞춘다.
+   중식+석식이 함께 있는 고등학교에서 석식이 아래로 잘리던 문제. */
+function fitMealBox() {
+  var el = document.getElementById('mealList'); if (!el) return;
+  var steps = [1, .94, .88, .82, .76, .7, .66, .62];
+  el.classList.remove('compact');
+  el.style.overflowY = 'hidden';
+  for (var i = 0; i < steps.length; i++) {
+    el.style.setProperty('--ms', String(steps[i]));
+    if (el.scrollHeight <= el.clientHeight + 1) return;
+  }
+  el.classList.add('compact');
+  for (var j = 0; j < steps.length; j++) {
+    el.style.setProperty('--ms', String(steps[j]));
+    if (el.scrollHeight <= el.clientHeight + 1) return;
+  }
+  el.style.overflowY = 'auto';
+}
+var _fitTimer = null;
+window.addEventListener('resize', function () {
+  clearTimeout(_fitTimer);
+  _fitTimer = setTimeout(fitMealBox, 200);
+});
 function renderPeriodRow(list) {
   _todaySubjects = {};
   (list || []).forEach(function (x) { _todaySubjects[x.period] = x.subject; });
