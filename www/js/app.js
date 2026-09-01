@@ -32,24 +32,76 @@ function saveSettingsLocal(patch) {
 }
 
 /* ===== GAS ?api= 호출 래퍼 (main/api.js 이식) ===== */
+// 전자칠판에서는 주소를 손으로 치다 https://를 빼먹는 일이 잦다.
+// 그대로 new URL()에 넣으면 TypeError가 나고, 그게 저장 핸들러를 통째로 죽여
+// "연결 확인 중..."에서 오류 문구도 없이 멈춘다(실제 제보 증상). 먼저 다듬는다.
+function normalizeWebAppUrl(raw) {
+  var s = String(raw == null ? '' : raw).trim();
+  if (!s) return '';
+  s = s.replace(/[\s​]+/g, '');          // 붙여넣기에 섞여 오는 공백·줄바꿈·제로폭 문자
+  if (!/^https?:\/\//i.test(s)) s = 'https://' + s;
+  return s;
+}
 function buildUrl(base, params) {
-  var u = new URL(base);
+  var u = new URL(normalizeWebAppUrl(base));
+  u.searchParams.delete('role');              // ?role=teacher가 붙은 주소를 넣어도 학생 화면으로 동작하게
   Object.keys(params || {}).forEach(function (k) {
     if (params[k] !== undefined && params[k] !== null && params[k] !== '') u.searchParams.set(k, params[k]);
   });
   return u.toString();
 }
+// 낡은 전자칠판 WebView 대응 — 실제 제보로 확인한 세 가지.
+//  · AbortController는 Chrome 66+, Promise.finally는 63+. 둘 다 없는 칠판에서
+//    "AbortController is not defined"로 저장이 통째로 실패했다.
+//  · Capacitor가 fetch를 가로챌 때 `new Headers(options?.headers)`를 부르는데,
+//    headers를 안 넘기면 `new Headers(undefined)`가 되어 낡은 WebView가 거부한다
+//    ("Failed to construct 'Headers': No matching constructor signature" — 실제 제보).
+//    그래서 **항상 빈 헤더 객체를 넘긴다.** 최신 기기에는 아무 차이가 없다.
+//  · 그래도 가로채기가 깨지면 Capacitor가 원본을 보관해 둔 window.CapacitorWebFetch로
+//    직접 요청한다(네이티브 우회 없이. GAS는 CORS를 허용하므로 브라우저에서도 된다 — 실측).
 function callApi(webAppUrl, api, params, timeoutMs) {
   if (!webAppUrl) return Promise.resolve({ ok: false, error: 'webAppUrl 미설정' });
-  var controller = new AbortController();
-  var timer = setTimeout(function () { controller.abort(); }, timeoutMs || 8000);
-  var url = buildUrl(webAppUrl, Object.assign({ api: api }, params));
-  return fetch(url, { signal: controller.signal }).then(function (res) {
-    if (!res.ok) return { ok: false, error: 'HTTP ' + res.status };
-    return res.json().then(function (data) { return { ok: true, data: data }; });
-  }).catch(function (e) {
-    return { ok: false, error: (e && e.message) || String(e) };
-  }).finally(function () { clearTimeout(timer); });
+  var url;
+  try {
+    url = buildUrl(webAppUrl, Object.assign({ api: api }, params));
+  } catch (e) {
+    return Promise.resolve({ ok: false, error: '주소 형식이 올바르지 않습니다 (https://script.google.com/... /exec 형태여야 합니다)' });
+  }
+  var ms = timeoutMs || 8000;
+  var ctrl = (typeof AbortController !== 'undefined') ? new AbortController() : null;
+  var opts = { headers: {} };
+  if (ctrl) opts.signal = ctrl.signal;
+  var timer = null;
+
+  var timeoutP = new Promise(function (resolve) {
+    timer = setTimeout(function () {
+      if (ctrl) { try { ctrl.abort(); } catch (e) {} }
+      resolve({ ok: false, error: '응답 시간 초과(' + Math.round(ms / 1000) + '초)' });
+    }, ms);
+  });
+  function run(fetchFn) {
+    // Capacitor의 fetch 가로채기는 Headers를 **동기로** 만든다 — 거기서 터지면
+    // 예외가 .catch()를 건너뛰고 함수 밖으로 튀어 저장 핸들러째 죽는다(실측).
+    // Promise로 감싸 동기 예외도 반드시 rejection이 되게 한다.
+    return new Promise(function (resolve) { resolve(fetchFn(url, opts)); }).then(function (res) {
+      if (!res.ok) return { ok: false, error: 'HTTP ' + res.status };
+      return res.json().then(function (data) { return { ok: true, data: data }; });
+    });
+  }
+  var fetchP = run(window.fetch).catch(function (e) {
+    var msg = (e && e.message) || String(e);
+    var brokenBridge = /Headers|constructor|signature/i.test(msg);
+    if (brokenBridge && typeof window.CapacitorWebFetch === 'function') {
+      return run(window.CapacitorWebFetch).catch(function (e2) {
+        return { ok: false, error: (e2 && e2.message) || String(e2) };
+      });
+    }
+    return { ok: false, error: msg };
+  });
+  return Promise.race([fetchP, timeoutP]).then(
+    function (r) { clearTimeout(timer); return r; },
+    function (e) { clearTimeout(timer); return { ok: false, error: (e && e.message) || String(e) }; }
+  );
 }
 var api = {
   getCalls: function (u, g, c) { return callApi(u, 'calls', { grade: g, classNum: c }); },
@@ -113,7 +165,7 @@ async function tick() {
   }
   var res = await api.getCalls(s.webAppUrl, s.grade, s.classNum);
   if (!res.ok) return;
-  var calls = res.data || [];
+  var calls = Array.isArray(res.data) ? res.data : [];
   if (!current) {
     var fresh = null;
     for (var i = 0; i < calls.length; i++) { if (!alertedRows[calls[i].row]) { fresh = calls[i]; break; } }
@@ -465,8 +517,11 @@ window.addEventListener('resize', function () {
   _fitTimer = setTimeout(refitAll, 200);
 });
 function renderPeriodRow(list) {
+  // 서버가 배열이 아닌 값을 주면 forEach에서 터져 화면 전체가 멈춘다(검사 중 실제로 겪음).
+  // 형태가 어긋나면 "수업 없음"으로 조용히 넘어가는 편이 낫다.
+  if (!Array.isArray(list)) list = [];
   _todaySubjects = {};
-  (list || []).forEach(function (x) { _todaySubjects[x.period] = x.subject; });
+  list.forEach(function (x) { _todaySubjects[x.period] = x.subject; });
   var row = document.getElementById('periodRow'); if (!row) return;
   if (!list || !list.length) { row.innerHTML = '<div class="today-empty">오늘은 수업이 없어요</div>'; return; }
   row.innerHTML = '';
@@ -613,6 +668,22 @@ function openCfgModal() {
 function wireCfgModal() {
   document.getElementById('openCfgBtn').addEventListener('click', openCfgModal);
 
+  // 키보드가 [저장] 버튼을 가려도 진행할 수 있게 — 세 칸 어디서든 Enter(키보드의 →)면 저장한다.
+  ['cfgUrl', 'cfgGrade', 'cfgClass'].forEach(function (id) {
+    document.getElementById(id).addEventListener('keydown', function (e) {
+      if (e.key === 'Enter' || e.keyCode === 13) {
+        e.preventDefault();
+        document.getElementById('cfgSaveBtn').click();
+      }
+    });
+  });
+  // 반을 입력하고 나면 버튼이 화면 밖에 있을 수 있다 — 칸을 누를 때마다 버튼을 시야로 끌어온다.
+  document.getElementById('cfgClass').addEventListener('focus', function () {
+    setTimeout(function () {
+      try { document.getElementById('cfgSaveBtn').scrollIntoView({ block: 'center' }); } catch (e) {}
+    }, 350);
+  });
+
   // 소리 설정 패널 토글 (평소 숨김 → 🔊 버튼으로 열고 닫기)
   var sp = document.getElementById('sSettings');
   document.getElementById('openSoundBtn').addEventListener('click', function () {
@@ -623,13 +694,15 @@ function wireCfgModal() {
     sp.classList.remove('show');
   });
   document.getElementById('cfgSaveBtn').addEventListener('click', async function () {
-    var url = document.getElementById('cfgUrl').value.trim();
+    var statusEl = document.getElementById('cfgStatus');
+    try {
+    var url = normalizeWebAppUrl(document.getElementById('cfgUrl').value);
     var grade = document.getElementById('cfgGrade').value.trim();
     var classNum = document.getElementById('cfgClass').value.trim();
-    var statusEl = document.getElementById('cfgStatus');
     if (!url || !grade || !classNum) { statusEl.textContent = 'URL·학년·반을 모두 입력하세요.'; statusEl.className = 'cfg-status err'; return; }
+    document.getElementById('cfgUrl').value = url;   // 다듬은 주소를 눈으로 확인할 수 있게 되돌려 쓴다
 
-    statusEl.textContent = '연결 확인 중...'; statusEl.className = 'cfg-status';
+    statusEl.textContent = '연결 확인 중... (최대 1분 걸릴 수 있습니다)'; statusEl.className = 'cfg-status';
     // GAS가 한동안 안 쓰이다 깨어나는 순간엔 응답이 8초를 넘겨 정상 URL도 "연결 실패"로 뜨던 문제 —
     // 확인 단계만 30초 제한 + 최대 3회 재시도. 첫 시도가 서버를 깨워놔서 재시도는 대부분 바로 붙는다.
     var test = null;
@@ -655,11 +728,31 @@ function wireCfgModal() {
       : '저장 완료! 시작합니다...';
     statusEl.className = 'cfg-status ok';
     setTimeout(function () { location.reload(); }, 600);
+    } catch (err) {
+      // 여기까지 오는 예외는 화면에 아무것도 안 뜨고 멈춘 것처럼 보인다 — 반드시 글자로 남긴다.
+      statusEl.textContent = '설정을 저장하지 못했습니다: ' + ((err && err.message) || String(err));
+      statusEl.className = 'cfg-status err';
+    }
   });
+}
+
+// flex의 gap을 이 WebView가 정말 아는지 실제로 재 본다(Chrome 84+).
+// @supports로는 grid gap과 구분되지 않아 낡은 칠판을 놓친다.
+function markFlexGapSupport() {
+  try {
+    var d = document.createElement('div');
+    d.style.cssText = 'display:flex;flex-direction:column;row-gap:10px;position:absolute;visibility:hidden';
+    d.innerHTML = '<i style="display:block;height:10px"></i><i style="display:block;height:10px"></i>';
+    document.body.appendChild(d);
+    var ok = d.scrollHeight >= 30;
+    document.body.removeChild(d);
+    if (!ok) document.documentElement.className += ' no-flex-gap';
+  } catch (e) { /* 못 재면 그냥 둔다 — 지금 화면이 기준이다 */ }
 }
 
 /* ===== 초기화 ===== */
 window.addEventListener('DOMContentLoaded', function () {
+  markFlexGapSupport();
   wireCfgModal();
 
   SETTINGS = loadSettings();
