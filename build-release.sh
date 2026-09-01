@@ -43,9 +43,19 @@ rm -rf android/app/build/outputs
 
 echo "== 6. 검증 =="
 BT=$(ls -d "${ANDROID_HOME:-C:/Android}"/build-tools/* | sort | tail -1)
-"$BT/apksigner.bat" verify --verbose --print-certs "$APK_OUT" | grep -E "^Verified using|SHA-256 digest" | head -4
-echo "   ↑ 인증서 SHA-256이 지난 판과 같아야 덮어쓰기 설치가 됩니다"
-unzip -p "$APK_OUT" assets/public/js/app.js | grep -c "normalizeWebAppUrl" | sed 's/^/   새 코드 반영(1이면 정상): /'
+# 주의: head로 자르면 "Verified using" 4줄에 밀려 지문 줄이 안 보인다 (v1.1.7 릴리스 때 실제로 그랬다)
+CERT=$("$BT/apksigner.bat" verify --verbose --print-certs "$APK_OUT")
+echo "$CERT" | grep -E "^Verified using"
+DIGEST=$(echo "$CERT" | grep "certificate SHA-256 digest" | grep -oE '[0-9a-f]{64}' | head -1)
+echo "   인증서 SHA-256: $DIGEST"
+# 정식본 도장(v1.1.6까지와 동일)이 아니면 기존 사용자가 덮어쓰기 설치를 못 한다 — 릴리스 전에 멈춘다
+case "$DIGEST" in
+  de464c69*) echo "   정식본 도장 일치 (de464c69…) OK" ;;
+  *) echo "!! 인증서가 정식본(de464c69…)과 다릅니다 — 릴리스 중단. 키스토어를 확인하세요."; exit 1 ;;
+esac
+NEWCODE=$(unzip -p "$APK_OUT" assets/public/js/app.js | grep -c "normalizeWebAppUrl" || true)
+echo "   새 코드 반영: normalizeWebAppUrl ${NEWCODE}곳 (0이면 실패)"
+[ "$NEWCODE" -ge 1 ] || { echo "!! 새 코드가 APK에 안 들어갔습니다"; exit 1; }
 
 cp "$APK_OUT" "$ROOT/$APK_NAME"
 echo "   => $ROOT/$APK_NAME"
