@@ -53,17 +53,42 @@ case "$DIGEST" in
   de464c69*) echo "   정식본 도장 일치 (de464c69…) OK" ;;
   *) echo "!! 인증서가 정식본(de464c69…)과 다릅니다 — 릴리스 중단. 키스토어를 확인하세요."; exit 1 ;;
 esac
-NEWCODE=$(unzip -p "$APK_OUT" assets/public/js/app.js | grep -c "normalizeWebAppUrl" || true)
-echo "   새 코드 반영: normalizeWebAppUrl ${NEWCODE}곳 (0이면 실패)"
-[ "$NEWCODE" -ge 1 ] || { echo "!! 새 코드가 APK에 안 들어갔습니다"; exit 1; }
+# 이번 판에서 «실제로 바뀐 것»이 APK 안에 있는지 본다.
+# ⚠ 고정 문자열로 두면 판이 바뀌어도 늘 통과해 «아무것도 안 재는 검사»가 된다 —
+#    판마다 이 기본값을 이번 변경이 담긴 문자열로 바꾸거나 YC_MARKER로 넘길 것.
+MARKER="${YC_MARKER:-우리 반 공지」에서 메모를 적으면}"
+APKJS=$(unzip -p "$APK_OUT" assets/public/js/app.js)
+NEWCODE=$(echo "$APKJS" | grep -c "$MARKER" || true)
+echo "   이번 판 표식 반영: «$MARKER» ${NEWCODE}곳 (0이면 실패)"
+[ "$NEWCODE" -ge 1 ] || { echo "!! 이번 판 수정이 APK에 안 들어갔습니다 (gradle이 옛 assets를 재사용했을 수 있습니다 — clean 빌드로 다시)"; exit 1; }
+# 지난 판들의 수정이 그대로 살아 있는지도 함께 본다(회귀).
+REG=$(echo "$APKJS" | grep -c "normalizeWebAppUrl" || true)
+echo "   회귀 확인: normalizeWebAppUrl ${REG}곳 (0이면 실패)"
+[ "$REG" -ge 1 ] || { echo "!! 지난 판 수정이 사라졌습니다"; exit 1; }
 
 cp "$APK_OUT" "$ROOT/$APK_NAME"
 echo "   => $ROOT/$APK_NAME"
 
 if [ "$DO_RELEASE" = "--release" ]; then
-  echo "== 7. 릴리스 =="
+  echo "== 7. 판 번호 커밋·push =="
+  # ⚠ push보다 릴리스가 먼저면 태그가 «이전 커밋»에 붙는다 (호환판에서 실제로 그랬다).
+  #    판 번호는 스크립트가 방금 고쳤으므로 여기서 커밋해 올린 뒤 릴리스한다.
+  if [ -n "$(git status --porcelain android/app/build.gradle)" ]; then
+    git add android/app/build.gradle
+    git commit -q -m "v$VER 판 번호 (versionCode $NEW_CODE)"
+    echo "   판 번호 커밋함"
+  fi
+  BR=$(git branch --show-current)
+  git push -q origin "$BR"
+  if [ -n "$(git status --porcelain)" ]; then
+    echo "!! 커밋되지 않은 변경이 남아 있습니다 — 릴리스 중단. 먼저 정리하세요."; git status --short; exit 1
+  fi
+  echo "   원격($BR)과 같은 상태 OK"
+
+  echo "== 8. 릴리스 =="
   gh release create "v$VER" "$ROOT/$APK_NAME" \
     -R kimju1416/youcall-board \
+    --target "$BR" \
     -t "유콜 보드 v$VER ($(date +%Y-%m-%d))" \
     -F RELEASE_NOTES.md
   echo "   릴리스 완료"
