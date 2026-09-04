@@ -494,7 +494,7 @@
 
         <a class="dl-btn" href="https://github.com/kimju1416/youcall-desktop/releases/latest/download/YouCallDesk-Setup.exe">
           ⬇️ YouCallDesk-Setup.exe 내려받기
-          <span class="sub">약 82MB · 항상 최신 버전으로 연결돼요</span>
+          <span class="sub">약 78MB · 항상 최신 버전으로 연결돼요</span>
         </a>
 
         <div class="code">
@@ -525,7 +525,7 @@
 
         <a class="dl-btn" href="https://github.com/kimju1416/youcall-board/releases/latest/download/YouCallBoard.apk">
           ⬇️ YouCallBoard.apk 내려받기
-          <span class="sub">약 3.6MB · 항상 최신 버전으로 연결돼요</span>
+          <span class="sub">약 3.5MB · 항상 최신 버전으로 연결돼요</span>
         </a>
 
         <div class="code">
@@ -543,6 +543,16 @@
         <div class="note warn"><span class="ic">⚠️</span><div><b>이 경고, 고장 아니에요</b><p>「출처를 알 수 없는 앱」 경고는 구글 플레이스토어를 거치지 않은 앱이면 무조건 떠요. 정상적인 과정이에요.</p></div></div>
 
         <div class="note tip"><span class="ic">💡</span><div><b>USB로 옮겨도 돼요</b><p>PC에서 위 버튼으로 받아 USB에 담고, 전자칠판의 File Manager로 열어서 설치해도 똑같이 동작해요.</p></div></div>
+
+        <h3><span class="e">🩹</span>이 앱이 안 깔리는 칠판이라면 — 호환판</h3>
+        <p class="body">오래된 전자칠판 중에 <strong>설치가 아예 안 되거나, 깔려도 반 입력에서 [저장하고 시작하기]가 안 눌리는</strong> 기기가 있어요. 칠판의 웹 표시 엔진(WebView)이 공장 출하 상태 그대로라 생기는 문제예요. 이럴 때 쓰는 <strong>호환판</strong>을 따로 두었습니다.</p>
+
+        <a class="dl-btn" href="https://github.com/kimju1416/youcall-board-compat/releases/latest/download/YouCallBoard-compat.apk">
+          ⬇️ YouCallBoard-compat.apk 내려받기
+          <span class="sub">약 3.5MB · 구형 전자칠판 전용</span>
+        </a>
+
+        <div class="note info"><span class="ic">ℹ️</span><div><b>기능은 똑같아요</b><p>화면도 사용법도 위의 기본판과 같습니다. 낡은 엔진에서도 되도록 안쪽을 손본 판이에요. <strong>기본판이 잘 깔렸다면 굳이 바꾸지 마세요</strong> — 두 앱은 서로 다른 앱으로 인식돼서 <strong>덮어쓰기가 안 되고 따로 깔립니다</strong>. 호환판으로 갈아탈 때는 기본판을 먼저 지우세요.</p></div></div>
       </section>
 
       <!-- ===== 10. 최초 설정·동작 방식 ===== -->
@@ -636,6 +646,7 @@
           <li><strong>급식·시간표·학사일정이 안 나와요</strong> — 설정 시트의 학교명이 정확한지, <code>유콜 ▸ 학교코드 조회</code>를 실행했는지 확인하세요. 급식·시간표는 방학·주말에는 원래 표시되지 않아요.</li>
           <li><strong>공지·메모를 바꿨는데 화면에 안 떠요</strong> — 공지를 보낼 때 고른 반이 그 교실이 맞는지 먼저 확인하세요(전교에 알리려면 <code>전체</code>). 웹·EXE·APK 모두 <strong>3분 안에 자동으로 반영</strong>되니 새로고침하지 않아도 됩니다.</li>
           <li><strong>상주형 APK인데 호출 화면이 안 떠요</strong> — 「다른 앱 위에 표시」 권한이 꺼져 있을 수 있어요. 설정 ▸ 애플리케이션 ▸ 유콜 보드 ▸ 권한에서 켜주세요.</li>
+          <li><strong>APK가 설치되지 않거나, 반까지 넣었는데 저장이 안 눌려요</strong> — 칠판이 오래돼서 생기는 문제예요. <a class="link" href="#s9">09</a> 아래쪽의 <strong>호환판(YouCallBoard-compat.apk)</strong>을 대신 설치해 보세요. 기능은 같습니다.</li>
           <li><strong>EXE 설치할 때 파란 경고 화면이 떠요</strong> — 윈도우 SmartScreen이에요. <code>추가 정보</code> ▸ <code>실행</code>을 누르면 진행됩니다. 스토어를 거치지 않은 프로그램이면 다 뜨는 정상적인 경고예요.</li>
           <li><strong>EXE를 완전히 끄고 싶어요</strong> — 트레이 아이콘(작업표시줄 오른쪽 하단)을 우클릭 ▸ <code>종료</code>를 누르세요. X 버튼만 누르면 트레이로 숨을 뿐 계속 실행 중이에요.</li>
           <li><strong>학생을 추가/삭제했는데 반영이 안 돼요</strong> — 시트 저장 후 화면에서 새로고침(F5)하면 즉시 반영돼요. 재배포는 필요 없어요.</li>
