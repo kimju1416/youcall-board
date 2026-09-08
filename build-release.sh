@@ -56,7 +56,7 @@ esac
 # 이번 판에서 «실제로 바뀐 것»이 APK 안에 있는지 본다.
 # ⚠ 고정 문자열로 두면 판이 바뀌어도 늘 통과해 «아무것도 안 재는 검사»가 된다 —
 #    판마다 이 기본값을 이번 변경이 담긴 문자열로 바꾸거나 YC_MARKER로 넘길 것.
-MARKER="${YC_MARKER:-우리 반 공지」에서 메모를 적으면}"
+MARKER="${YC_MARKER:-var ls = e, le = e + cfg.lunchLen}"
 APKJS=$(unzip -p "$APK_OUT" assets/public/js/app.js)
 NEWCODE=$(echo "$APKJS" | grep -c "$MARKER" || true)
 echo "   이번 판 표식 반영: «$MARKER» ${NEWCODE}곳 (0이면 실패)"
